@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Magic Learning Pro (V60 - Perfect Desktop & Mobile)</title>
+    <title>Magic Learning Pro (V61 - Fixed Audio & UI)</title>
     <style>
         /* === 基础样式 === */
         :root { --primary: #2979FF; --bg-grey: #F5F7FA; --text-main: #333; --green: #4CAF50; }
@@ -22,15 +22,16 @@
         }
         #scene-img { width: 100%; height: 100%; object-fit: contain; object-position: center; }
 
-        /* === 按钮通用样式 === */
+        /* === 按钮通用样式 (V61优化：更小、更精致) === */
         .pill-btn {
-            background: rgba(0, 0, 0, 0.65); /* 手机端默认黑底 */
-            color: white; border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0, 0, 0, 0.65); 
+            color: white; border: 1px solid rgba(255,255,255,0.25);
             backdrop-filter: blur(4px);
-            padding: 5px 10px; border-radius: 20px;
-            font-size: 12px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: 0.2s;
-            white-space: nowrap; min-width: 32px; text-align: center;
+            /* ★ 修改：缩小内边距和字体，使其更秀气 */
+            padding: 4px 8px; border-radius: 15px;
+            font-size: 11px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: 0.2s;
+            white-space: nowrap; min-width: 28px; text-align: center;
         }
         .pill-btn:active { transform: scale(0.95); background: rgba(0,0,0,0.9); }
         .pill-btn.active { background: var(--primary); border-color: var(--primary); }
@@ -38,7 +39,8 @@
         /* 播放大按钮 */
         .play-btn {
             background: var(--green); color: white; border: none;
-            padding: 6px 14px; display: flex; align-items: center; gap: 4px;
+            /* ★ 修改：稍微缩小播放按钮 */
+            padding: 5px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;
         }
         .play-btn.playing { background: #E53935; } 
 
@@ -47,31 +49,33 @@
 
         /* === ★★★ 核心布局逻辑 ★★★ === */
         
-        /* 左侧控制台容器 (包含 倍速 和 循环) */
+        /* 左侧控制台容器 */
         #left-controls-stack {
             position: absolute; z-index: 100;
             display: flex; 
-            flex-direction: column; /* 默认竖排堆叠 */
-            gap: 8px; 
+            flex-direction: column; 
+            gap: 6px; /* 行间距缩小 */
             align-items: flex-start;
         }
         
         /* 每一行的容器 */
         .control-row {
-            display: flex; gap: 5px; align-items: center;
+            display: flex; gap: 4px; /* 按钮间距缩小 */
+            align-items: center;
         }
 
-        /* 手机端位置：左下角 */
-        #left-controls-stack { bottom: 15px; left: 10px; }
+        /* ★ 修改：手机端位置紧贴底部，减少留白 */
+        #left-controls-stack { bottom: 8px; left: 8px; }
         
-        /* 右下角动作组 (播放 + 返回) */
+        /* 右下角动作组 */
         #group-actions {
             position: absolute; z-index: 100;
-            display: flex; gap: 8px; align-items: center;
-            bottom: 15px; right: 10px;
+            display: flex; gap: 6px; align-items: center;
+            /* ★ 修改：紧贴右下角 */
+            bottom: 8px; right: 8px; 
         }
 
-        /* PC端隐藏的播放按钮占位符 (仅在PC端显示在左上角) */
+        /* PC端隐藏的播放按钮占位符 */
         #pc-play-btn-wrapper { display: none; }
 
         /* === PC/iPad 端适配 (屏幕宽 > 768px) === */
@@ -81,30 +85,26 @@
             #col-mid { flex: 1; border-right: 1px solid #ddd; }
             #col-right { flex: 0 0 300px; height: 100%; border-top: none; }
 
-            /* PC样式优化：白底黑字 */
-            .pill-btn { background: rgba(255,255,255,0.9); color: #333; border: 1px solid #ddd; }
+            /* PC样式恢复稍大一点的操作手感 */
+            .pill-btn { background: rgba(255,255,255,0.9); color: #333; border: 1px solid #ddd; padding: 5px 10px; font-size: 12px; }
             .pill-btn.active { background: var(--primary); color: white; }
             .play-btn { background: var(--green); color: white; }
 
-            /* === PC布局重构：防重叠 === */
-            
-            /* 1. 左侧控制台飞到顶部 */
+            /* === PC布局重构：飞到顶部 === */
             #left-controls-stack {
-                top: 20px; left: 20px; /* 左上角 */
+                top: 20px; left: 20px; 
                 bottom: auto;
-                gap: 10px; /* 行间距 */
+                gap: 10px; 
             }
 
-            /* 2. 第一行：显示 播放按钮 + 倍速 */
-            /* 我们把播放按钮移动到倍速前面去 (通过 flex order 或者 DOM 结构调整，这里用 DOM 插入更稳) */
-            /* 在 HTML 里，我们在第一行开头预留了一个隐藏的 PC 播放按钮位 */
+            /* 显示PC播放按钮容器 */
             #pc-play-btn-wrapper { display: block; margin-right: 8px; }
 
-            /* 3. 隐藏右下角的播放按钮 (因为它跑上面去了) */
+            /* 隐藏移动端的右下播放按钮 */
             #mobile-play-btn { display: none; }
             
-            /* 4. 右下角只剩下书架按钮吗？不，书架按钮在PC端也飞到右上角去了 */
-            #group-actions { display: none; } /* 彻底隐藏移动端右下角组 */
+            /* 隐藏移动端右下角组 */
+            #group-actions { display: none; } 
         }
         
         /* PC右上角返回 */
@@ -194,11 +194,11 @@
             <button class="login-btn" onclick="checkAccountLogin()">登录</button>
             <p id="login-msg" style="color:red; font-size:13px; margin-top:10px; min-height:20px;"></p>
         </div>
-        <p style="margin-top:20px; font-size:12px; opacity:0.7; color:white;">Magic Learning Pro V60</p>
+        <p style="margin-top:20px; font-size:12px; opacity:0.7; color:white;">Magic Learning Pro V61</p>
     </div>
 
     <div id="menu-screen" style="padding:40px; text-align:center;">
-        <h2>📚 魔法精读 (V60)</h2>
+        <h2>📚 魔法精读 (V61)</h2>
         <div onclick="openBook()" style="background:white; display:inline-block; padding:20px; border-radius:15px; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.1); max-width: 320px;">
             <img id="cover-img" src="images/story001_yellowbus/p1.jpg" style="background-color:#eee; border-radius:10px; margin-bottom:10px; width: 100%; height: auto; min-height: 200px; object-fit: cover; aspect-ratio: 4/3;">
             <h3>The Yellow Bus</h3>
@@ -460,7 +460,12 @@
 
     function startStory() {
         document.getElementById('start-overlay').style.display = 'none';
-        mp3Player.src = ""; mp3Player.play().catch(()=>{}); 
+        
+        // ★ 核心修复：更强力的音频唤醒
+        mp3Player.src = ""; 
+        mp3Player.load(); // 强制加载
+        mp3Player.play().catch(()=>{}); 
+        
         isAutoPlaying = true;
         updatePlayButtonUI();
         playNextParagraph(0);
@@ -511,6 +516,7 @@
         container.appendChild(spacer);
     }
 
+    /* === ★ 核心修复：更稳健的播放函数 === */
     function playMp3(url, onEndCallback) {
         stopAllSound(false);
         if(!url) {
@@ -518,8 +524,14 @@
             return;
         }
         mp3Player.src = url;
+        mp3Player.load(); // ★ 增加这一步，强制浏览器重新加载音频，解决iOS部分问题
         mp3Player.playbackRate = currentRate;
-        mp3Player.play().catch(e => { console.log("Play Fail:", e); });
+        
+        mp3Player.play().then(() => {
+            // 播放成功
+        }).catch(e => { 
+            console.log("Play Fail:", e); 
+        });
         
         mp3Player.onended = () => { if(onEndCallback) onEndCallback(); };
         mp3Player.onerror = () => { console.log("MP3 Error"); };
@@ -650,7 +662,6 @@
         const text = isAutoPlaying ? "⏹" : "▶ 全文";
         const action = isAutoPlaying ? 'add' : 'remove';
 
-        // 同时更新两个按钮
         if(btnMobile) { btnMobile.innerHTML = text; btnMobile.classList[action]('playing'); }
         if(btnPC) { btnPC.innerHTML = text; btnPC.classList[action]('playing'); }
     }
