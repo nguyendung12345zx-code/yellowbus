@@ -3,328 +3,486 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Magic Learning Pro (V24)</title>
+    <title>Magic Learning Pro (V60 - Perfect Desktop & Mobile)</title>
     <style>
-        /* === 1. 全局基础 === */
+        /* === 基础样式 === */
         :root { --primary: #2979FF; --bg-grey: #F5F7FA; --text-main: #333; --green: #4CAF50; }
         body { margin: 0; font-family: "Comic Sans MS", -apple-system, sans-serif; background: var(--bg-grey); height: 100vh; overflow: hidden; display: flex; flex-direction: column; color: var(--text-main); }
         
-        /* === 2. 顶部导航栏 (Header) === */
-        header { 
-            height: 50px; background: white; border-bottom: 1px solid #E0E0E0; 
-            display: flex; align-items: center; justify-content: space-between; padding: 0 15px; 
-            flex-shrink: 0; z-index: 100;
-        }
-        .header-left, .header-right { display: flex; align-items: center; gap: 8px; }
+        /* 主容器 */
+        #main-container { display: flex; flex: 1; overflow: hidden; flex-direction: column; position: relative; height: 100%; }
         
-        .back-btn { border: 1px solid #ddd; background: white; padding: 5px 12px; border-radius: 20px; cursor: pointer; color: #555; font-size: 13px; white-space: nowrap; }
-        
-        .speed-btn { 
-            border: 1px solid #ddd; background: #f9f9f9; padding: 4px 8px; border-radius: 4px; 
-            cursor: pointer; font-size: 12px; min-width: 32px; transition: 0.2s;
-        }
-        .speed-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        /* 手机上隐藏 "语速" 文字，省空间 */
-        .speed-label { font-size: 12px; color: #888; display: none; margin-right: 5px; }
-
-        #play-all-btn {
-            background: var(--green); color: white; border: 1px solid var(--green); 
-            font-weight: bold; padding: 5px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px; white-space: nowrap; border-radius: 4px; cursor: pointer;
-        }
-        #play-all-btn.playing { background: #E53935; border-color: #E53935; }
-
-        /* === 3. 主容器 (自适应核心) === */
-        #main-container { 
-            display: flex; 
-            flex: 1; 
-            overflow: hidden; 
-            flex-direction: column; /* 默认：手机/平板竖屏为垂直布局 */
-            position: relative;
-        }
-
-        /* --- A. 左栏 (图片) --- */
+        /* === 1. 上部：图片区域 === */
         #col-left { 
-            flex: 0 0 35%; /* 手机占高度的 35% */
+            flex: 0 0 38%; 
             background: #ffffff; 
-            display: flex; align-items: center; justify-content: center;
-            padding: 10px; box-sizing: border-box; border-bottom: 1px solid #eee;
-            position: relative;
+            display: flex; align-items: center; justify-content: center; 
+            position: relative; border-bottom: 1px solid #eee; overflow: hidden;
+            z-index: 20;
         }
-        #scene-img { 
-            width: 100%; height: 100%; object-fit: contain; 
-            border-radius: 8px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.05));
-            transition: opacity 0.2s;
+        #scene-img { width: 100%; height: 100%; object-fit: contain; object-position: center; }
+
+        /* === 按钮通用样式 === */
+        .pill-btn {
+            background: rgba(0, 0, 0, 0.65); /* 手机端默认黑底 */
+            color: white; border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(4px);
+            padding: 5px 10px; border-radius: 20px;
+            font-size: 12px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: 0.2s;
+            white-space: nowrap; min-width: 32px; text-align: center;
+        }
+        .pill-btn:active { transform: scale(0.95); background: rgba(0,0,0,0.9); }
+        .pill-btn.active { background: var(--primary); border-color: var(--primary); }
+        
+        /* 播放大按钮 */
+        .play-btn {
+            background: var(--green); color: white; border: none;
+            padding: 6px 14px; display: flex; align-items: center; gap: 4px;
+        }
+        .play-btn.playing { background: #E53935; } 
+
+        /* 返回按钮 */
+        .back-btn-float { background: rgba(255, 255, 255, 0.95); color: #333; border: 1px solid #ccc; }
+
+        /* === ★★★ 核心布局逻辑 ★★★ === */
+        
+        /* 左侧控制台容器 (包含 倍速 和 循环) */
+        #left-controls-stack {
+            position: absolute; z-index: 100;
+            display: flex; 
+            flex-direction: column; /* 默认竖排堆叠 */
+            gap: 8px; 
+            align-items: flex-start;
+        }
+        
+        /* 每一行的容器 */
+        .control-row {
+            display: flex; gap: 5px; align-items: center;
         }
 
-        /* --- B. 中栏 (文字) --- */
+        /* 手机端位置：左下角 */
+        #left-controls-stack { bottom: 15px; left: 10px; }
+        
+        /* 右下角动作组 (播放 + 返回) */
+        #group-actions {
+            position: absolute; z-index: 100;
+            display: flex; gap: 8px; align-items: center;
+            bottom: 15px; right: 10px;
+        }
+
+        /* PC端隐藏的播放按钮占位符 (仅在PC端显示在左上角) */
+        #pc-play-btn-wrapper { display: none; }
+
+        /* === PC/iPad 端适配 (屏幕宽 > 768px) === */
+        @media (min-width: 768px) {
+            #main-container { flex-direction: row; }
+            #col-left { flex: 0 0 400px; height: 100%; border-right: 1px solid #ddd; border-bottom: none; }
+            #col-mid { flex: 1; border-right: 1px solid #ddd; }
+            #col-right { flex: 0 0 300px; height: 100%; border-top: none; }
+
+            /* PC样式优化：白底黑字 */
+            .pill-btn { background: rgba(255,255,255,0.9); color: #333; border: 1px solid #ddd; }
+            .pill-btn.active { background: var(--primary); color: white; }
+            .play-btn { background: var(--green); color: white; }
+
+            /* === PC布局重构：防重叠 === */
+            
+            /* 1. 左侧控制台飞到顶部 */
+            #left-controls-stack {
+                top: 20px; left: 20px; /* 左上角 */
+                bottom: auto;
+                gap: 10px; /* 行间距 */
+            }
+
+            /* 2. 第一行：显示 播放按钮 + 倍速 */
+            /* 我们把播放按钮移动到倍速前面去 (通过 flex order 或者 DOM 结构调整，这里用 DOM 插入更稳) */
+            /* 在 HTML 里，我们在第一行开头预留了一个隐藏的 PC 播放按钮位 */
+            #pc-play-btn-wrapper { display: block; margin-right: 8px; }
+
+            /* 3. 隐藏右下角的播放按钮 (因为它跑上面去了) */
+            #mobile-play-btn { display: none; }
+            
+            /* 4. 右下角只剩下书架按钮吗？不，书架按钮在PC端也飞到右上角去了 */
+            #group-actions { display: none; } /* 彻底隐藏移动端右下角组 */
+        }
+        
+        /* PC右上角返回 */
+        #pc-back-btn { display: none; position: absolute; top: 20px; right: 20px; z-index: 100; }
+        @media (min-width: 768px) {
+            #pc-back-btn { display: block; } 
+        }
+
+        /* === 2. 中部：课文 === */
         #col-mid { 
-            flex: 1; /* 自动占据剩余空间 */
-            background: var(--bg-grey); 
-            overflow-y: auto; padding: 15px; 
-            scroll-behavior: smooth;
+            flex: 1; background: var(--bg-grey); 
+            overflow-y: auto; padding: 15px; transition: flex 0.3s; 
         }
 
-        /* --- C. 右栏 (单词) --- */
+        /* === 3. 底部：词汇表 === */
         #col-right { 
-            display: flex; flex-direction: column;
-            flex: 0 0 25%; /* 手机占高度的 25% */
-            background: white; 
-            border-top: 2px solid #FFD54F; /* 黄色分割线 */
-            z-index: 10;
+            display: flex; flex-direction: column; 
+            flex: 0 0 auto; background: white; 
+            border-top: 2px solid #FFD54F; z-index: 30; 
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        .vocab-header-container { 
+            display: flex; align-items: center; justify-content: space-between; 
+            padding: 10px 15px; background: #FFF8E1; border-bottom: 1px solid #FFE082;
+            flex-shrink: 0; cursor: pointer;
+        }
+        .vocab-header-text { font-weight: bold; font-size: 14px; color: #5D4037; flex: 1; user-select: none; }
+        .toggle-btn { 
+            background: white; border: 1px solid #FFCA28; width: 28px; height: 28px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 16px; color: #F57C00; cursor: pointer; margin-left: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .vocab-list { 
+            display: none; height: 40vh; overflow-y: auto; padding: 10px; background: white;
+            -webkit-overflow-scrolling: touch; 
+        }
+        .vocab-list.expanded { display: block; }
+
+        @media (min-width: 768px) {
+            .vocab-list { display: block; height: auto; flex: 1; }
+            .toggle-btn { display: flex; } 
         }
 
-        /* === 4. 电脑 & 平板横屏 (Media Query) === */
-        /* 当屏幕宽度大于 1024px 时 (iPad Pro 横屏、笔记本、台式机) */
-        @media (min-width: 1024px) {
-            header { height: 60px; padding: 0 25px; }
-            .speed-label { display: inline; } /* 电脑上显示“语速”二字 */
-
-            #main-container { flex-direction: row; } /* 变为横向排列 */
-
-            /* 左栏变宽 */
-            #col-left { 
-                flex: 0 0 40%; /* 宽度占 40% */
-                height: 100%; 
-                border-right: 1px solid #ddd; border-bottom: none;
-                padding: 30px; /* 电脑上留白更多更好看 */
-            }
-            #scene-img { 
-                filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1)); /* 电脑上阴影加重 */
-            }
-
-            /* 中栏 */
-            #col-mid { 
-                flex: 1; height: 100%; 
-                border-right: 1px solid #ddd; 
-                padding: 30px; /* 增加内边距 */
-            }
-
-            /* 右栏 */
-            #col-right { 
-                flex: 0 0 320px; /* 固定宽度 320px */
-                height: 100%; border-top: none; 
-            }
-        }
-
-        /* === 内容组件样式 === */
+        /* 卡片样式 */
+        .script-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 2px solid transparent; cursor: pointer; transition: 0.2s; }
+        .script-card.active { border-color: var(--primary); background: #E3F2FD; transform: scale(1.02); }
+        .en-text { font-size: 18px; font-weight: 500; line-height: 1.5; margin-bottom: 8px; color: #222; }
+        .cn-text { font-size: 14px; color: #666; margin-bottom: 5px; }
+        .highlight-word { color: #00897B; border-bottom: 2px solid #4DB6AC; font-weight: bold; cursor: pointer; }
         
-        /* 文本卡片 */
-        .script-card {
-            background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04); border: 2px solid transparent; cursor: pointer; transition: all 0.2s;
-        }
-        .script-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .script-card.active { border-color: var(--primary); background: #E3F2FD; transform: scale(1.01); }
-        
-        .en-text { font-size: 19px; font-weight: 600; line-height: 1.6; margin-bottom: 8px; color: #222; }
-        .cn-text { font-size: 15px; color: #666; margin-bottom: 4px; }
-        
-        .highlight-word { 
-            color: #00897B; border-bottom: 2px solid #4DB6AC; padding-bottom: 1px;
-            cursor: pointer; transition: 0.2s; 
-        }
-        .highlight-word:hover { background: #B2DFDB; border-radius: 4px; color: #004D40; }
-
-        /* 单词列表 */
-        .vocab-header { padding: 12px; background: #FAFAFA; font-weight: bold; font-size: 14px; color: #555; border-bottom: 1px solid #eee; text-align: center; }
-        .vocab-list { flex: 1; overflow-y: auto; padding: 12px; }
-        
-        .vocab-card { 
-            border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; 
-            background: #fff; border-left: 4px solid #ddd; position: relative; cursor: pointer;
-        }
+        .vocab-card { border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 8px; background: #fff; border-left: 4px solid #ddd; cursor: pointer; }
         .vocab-card.focused { border-left-color: #FF9800 !important; background-color: #FFF3E0 !important; }
         .vocab-top { display: flex; justify-content: space-between; align-items: center; }
         .vocab-word { font-size: 18px; font-weight: bold; color: #333; }
-        
-        .vocab-mask { margin-top: 8px; font-size: 12px; color: #999; background: #f9f9f9; padding: 4px; text-align: center; border-radius: 4px; }
-        .vocab-reveal { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #eee; font-size: 14px; color: #444; }
+        .vocab-mask { margin-top: 5px; font-size: 12px; color: #999; background: #f5f5f5; padding: 4px; text-align: center; }
+        .vocab-reveal { display: none; margin-top: 5px; padding-top: 5px; border-top: 1px solid #f0f0f0; font-size: 14px; }
         .vocab-card.revealed .vocab-mask { display: none; }
-        .vocab-card.revealed .vocab-reveal { display: block; animation: fadeIn 0.3s; }
-        .vocab-card.revealed { border-left-color: #4CAF50; }
-        .pos-tag { background: #FFECB3; color: #E65100; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-right: 6px; }
+        .vocab-card.revealed .vocab-reveal { display: block; }
 
-        /* 互动题 */
-        .section-divider { text-align: center; margin: 40px 0 20px 0; color: #999; font-size: 13px; letter-spacing: 1px; }
-        .quiz-card { background: #FFF8E1; border-radius: 12px; padding: 18px; margin-bottom: 20px; border: 2px dashed #FFD54F; }
-        .quiz-title { font-weight: bold; color: #F57C00; margin-bottom: 12px; font-size: 15px; }
-        .quiz-opt { 
-            background: white; border: 1px solid #FFE082; padding: 12px; border-radius: 8px; margin-bottom: 10px; 
-            cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.1s;
-        }
-        .quiz-opt:active { background: #FFECB3; }
-        .quiz-opt.correct { background: #C8E6C9; border-color: #4CAF50; color: #1B5E20; font-weight: bold; }
-        .quiz-opt.wrong { background: #FFCDD2; border-color: #E53935; color: #B71C1C; }
+        .section-divider { text-align: center; margin: 30px 0 20px 0; color: #888; font-size: 14px; }
+        .quiz-card { background: #FFF3E0; border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 2px dashed #FFB74D; }
+        .quiz-opt { background: white; border: 1px solid #FFCC80; padding: 10px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .quiz-opt.correct { background: #C8E6C9; border-color: #4CAF50; }
+        .quiz-opt.wrong { background: #FFCDD2; border-color: #F44336; }
+        .quiz-opt::after { content: ''; font-weight: bold; font-size: 18px; margin-left: 10px; }
+        .quiz-opt.correct::after { content: '✅'; color: #2E7D32; }
+        .quiz-opt.wrong::after { content: '❌'; color: #C62828; }
+        .audio-btn { border: 1px solid var(--primary); background-color: white; color: var(--primary); border-radius: 6px; padding: 4px 10px; margin-left: 10px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 4px; transition: 0.2s; }
 
-        /* 错误提示 */
-        #error-msg { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; width: 100%; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        #login-overlay, #start-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #login-overlay { background: #2979FF; }
+        #start-overlay { background: rgba(255,255,255, 0.95); backdrop-filter: blur(5px); }
+        .login-box { background: white; padding: 30px; border-radius: 20px; width: 85%; max-width: 320px; text-align: center; color: #333; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .login-input { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #eee; border-radius: 8px; font-size: 16px; box-sizing: border-box; background: #f9f9f9; outline: none; }
+        .login-btn { width: 100%; padding: 12px; background: #2979FF; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .big-start-btn { background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 24px; font-weight: bold; box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4); cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="menu-screen" style="padding:40px; text-align:center; height:100vh; background:var(--bg-grey); box-sizing:border-box; overflow-y:auto;">
-        <h2 style="color:#2E7D32; margin-bottom:30px;">📚 Magic English Library</h2>
-        <div onclick="openBook()" style="background:white; display:inline-block; padding:20px; border-radius:20px; cursor:pointer; box-shadow:0 10px 25px rgba(0,0,0,0.1); width:200px; transition:transform 0.2s;">
-            <img src="https://via.placeholder.com/200x200/FDD835/FFFFFF?text=Start" style="border-radius:15px; margin-bottom:15px; width:100%;">
-            <h3 style="margin:0; font-size:18px;">The Yellow Bus</h3>
-            <p style="color:#888; font-size:13px; margin-top:8px;">V24 全平台适配版</p>
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2 style="margin-top:0; color:#2979FF;">🔐 学员登录</h2>
+            <input type="text" id="username-input" class="login-input" placeholder="账号 (vip1)">
+            <input type="password" id="password-input" class="login-input" placeholder="密码 (123456)">
+            <button class="login-btn" onclick="checkAccountLogin()">登录</button>
+            <p id="login-msg" style="color:red; font-size:13px; margin-top:10px; min-height:20px;"></p>
+        </div>
+        <p style="margin-top:20px; font-size:12px; opacity:0.7; color:white;">Magic Learning Pro V60</p>
+    </div>
+
+    <div id="menu-screen" style="padding:40px; text-align:center;">
+        <h2>📚 魔法精读 (V60)</h2>
+        <div onclick="openBook()" style="background:white; display:inline-block; padding:20px; border-radius:15px; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.1); max-width: 320px;">
+            <img id="cover-img" src="images/story001_yellowbus/p1.jpg" style="background-color:#eee; border-radius:10px; margin-bottom:10px; width: 100%; height: auto; min-height: 200px; object-fit: cover; aspect-ratio: 4/3;">
+            <h3>The Yellow Bus</h3>
+            <p style="color:#666; font-size:12px;">点击封面进入</p>
         </div>
     </div>
 
     <div id="learning-screen" style="display:none; height:100vh; flex-direction:column;">
-        <header>
-            <div class="header-left">
-                <button class="back-btn" onclick="location.reload()">⬅ 书架</button>
-            </div>
-            
-            <div class="header-right">
-                <span class="speed-label">语速:</span>
-                <button class="speed-btn" onclick="setSpeed(0.5)">0.5</button>
-                <button class="speed-btn" onclick="setSpeed(0.75)">0.75</button>
-                <button class="speed-btn active" onclick="setSpeed(1.0)">1.0</button>
-                <button class="speed-btn" onclick="setSpeed(1.25)">1.25</button>
-                <button id="play-all-btn" onclick="toggleAutoPlay()">▶ 全文</button>
-            </div>
-        </header>
+        <div id="start-overlay">
+            <div style="font-size:60px; margin-bottom:20px;">🚌</div>
+            <button class="big-start-btn" onclick="startStory()">✨ Start Story ✨</button>
+        </div>
 
         <div id="main-container">
             <div id="col-left">
-                <img id="scene-img" src="" alt="Scene" onerror="this.style.display='none'; document.getElementById('error-msg').style.display='block';">
                 
-                <div id="error-msg" style="display:none;">
-                    <div style="font-size:30px;">🖼️</div>
-                    <p style="font-size:12px; color:#999; margin-top:5px;">图片未加载<br>请检查 images 文件夹</p>
+                <div id="left-controls-stack">
+                    <div class="control-row">
+                        <div id="pc-play-btn-wrapper">
+                            <button id="pc-play-btn" class="pill-btn play-btn" onclick="toggleAutoPlay()">▶ 全文</button>
+                        </div>
+
+                        <button class="pill-btn speed-btn" onclick="setSpeed(0.5)">0.5</button>
+                        <button class="pill-btn speed-btn" onclick="setSpeed(0.75)">0.75</button>
+                        <button class="pill-btn speed-btn active" onclick="setSpeed(1.0)">1.0</button>
+                        <button class="pill-btn speed-btn" onclick="setSpeed(1.25)">1.25</button>
+                    </div>
+                    
+                    <div class="control-row">
+                        <button id="loop-seq" class="pill-btn loop-btn active" onclick="setLoopMode('seq')">➡️ 顺序</button>
+                        <button id="loop-one" class="pill-btn loop-btn" onclick="setLoopMode('one')">🔂 单句</button>
+                        <button id="loop-all" class="pill-btn loop-btn" onclick="setLoopMode('all')">🔄 全文</button>
+                    </div>
                 </div>
+
+                <div id="group-actions">
+                    <button id="mobile-play-btn" class="pill-btn play-btn" onclick="toggleAutoPlay()">▶ 全文</button>
+                    <button id="mobile-back-btn" class="pill-btn back-btn-float" onclick="location.reload()">⬅ 书架</button>
+                </div>
+
+                <div id="pc-back-btn">
+                    <button class="pill-btn back-btn-float" onclick="location.reload()">⬅ 书架</button>
+                </div>
+
+                <img id="scene-img" src="" style="background-color:#eee;" onerror="this.alt='图片未找到'">
             </div>
-
+            
             <div id="col-mid"></div>
-
+            
             <div id="col-right">
-                <div class="vocab-header">🔑 核心词汇 (点击绿字查看)</div>
+                <div class="vocab-header-container">
+                    <div id="vocab-header-el" class="vocab-header-text" onclick="toggleVocabMode()">🔑 核心词汇 (点击全显)</div>
+                    <button id="toggle-vocab-btn" class="toggle-btn" onclick="toggleVocabVisibility()">➕</button>
+                </div>
                 <div class="vocab-list" id="vocab-container"></div>
             </div>
         </div>
     </div>
 
 <script>
-    // ==========================================
-    // 数据源
-    // ==========================================
+    const USER_DATABASE = { "vip1": "123456", "vip2": "123456", "student": "888888", "class01": "000000" };
+    let mp3Player = new Audio();
+    let currentRate = 1.0;
+    let isAutoPlaying = false; 
+    let currentIndex = 0; 
+    let isFullVocabMode = false;
+    let playMode = 'seq'; 
+
+    const AUDIO_BASE = "images/story001_yellowbus/";
+    
     const storyData = {
         title: "The Yellow Bus",
         paragraphs: [
             {
                 text: "I go to {school} by the {yellow} {bus} every {morning}. It is a {big} and {long} car.",
                 cn: "我每天早上坐黄色校车去上学。它是一辆又大又长的车。",
-                img: "images/story001_yellowbus/p1.jpg", 
+                img: AUDIO_BASE + "p1.jpg", 
+                audio: AUDIO_BASE + "p1.mp3", 
                 vocab: { 
-                    "school": { ph: "/skuːl/", pos: "n.", cn: "学校" },
-                    "yellow": { ph: "/ˈjel.oʊ/", pos: "adj.", cn: "黄色的" },
-                    "bus": { ph: "/bʌs/", pos: "n.", cn: "公共汽车" },
-                    "morning": { ph: "/ˈmɔːr.nɪŋ/", pos: "n.", cn: "早晨" },
-                    "big": { ph: "/bɪɡ/", pos: "adj.", cn: "大的" },
-                    "long": { ph: "/lɑːŋ/", pos: "adj.", cn: "长的" }
+                    "school": { ph: "/skuːl/", pos: "n.", cn: "学校", audio: AUDIO_BASE + "v_school.mp3" },
+                    "yellow": { ph: "/ˈjel.oʊ/", pos: "adj.", cn: "黄色的", audio: AUDIO_BASE + "v_yellow.mp3" },
+                    "bus": { ph: "/bʌs/", pos: "n.", cn: "公共汽车", audio: AUDIO_BASE + "v_bus.mp3" },
+                    "morning": { ph: "/ˈmɔːr.nɪŋ/", pos: "n.", cn: "早晨", audio: AUDIO_BASE + "v_morning.mp3" },
+                    "big": { ph: "/bɪɡ/", pos: "adj.", cn: "大的", audio: AUDIO_BASE + "v_big.mp3" },
+                    "long": { ph: "/lɑːŋ/", pos: "adj.", cn: "长的", audio: AUDIO_BASE + "v_long.mp3" }
                 }
             },
             {
                 text: "The {driver} is Mr. Brown. He is very {nice} to us.",
                 cn: "司机是布朗先生，他对我们很友善。",
-                img: "images/story001_yellowbus/p2.jpg",
+                img: AUDIO_BASE + "p2.jpg",
+                audio: AUDIO_BASE + "p2.mp3",
                 vocab: { 
-                    "driver": { ph: "/ˈdraɪ.vɚ/", pos: "n.", cn: "司机" },
-                    "nice": { ph: "/naɪs/", pos: "adj.", cn: "友好的" }
+                    "driver": { ph: "/ˈdraɪ.vɚ/", pos: "n.", cn: "司机", audio: AUDIO_BASE + "v_driver.mp3" },
+                    "nice": { ph: "/naɪs/", pos: "adj.", cn: "友好的", audio: AUDIO_BASE + "v_nice.mp3" }
                 }
             },
             {
                 text: "I {wait} for the bus at the bus {stop}. When the {door} {opens}, I see my {friends} {inside}.",
                 cn: "我在车站等车。当车门打开时，我看到我的朋友们在里面。",
-                img: "images/story001_yellowbus/p3.jpg",
+                img: AUDIO_BASE + "p3.jpg",
+                audio: AUDIO_BASE + "p3.mp3",
                 vocab: { 
-                    "wait": { ph: "/weɪt/", pos: "v.", cn: "等待" },
-                    "stop": { ph: "/stɑːp/", pos: "n.", cn: "车站" },
-                    "door": { ph: "/dɔːr/", pos: "n.", cn: "门" },
-                    "opens": { ph: "/ˈoʊ.pənz/", pos: "v.", cn: "打开" },
-                    "friends": { ph: "/frendz/", pos: "n.", cn: "朋友" },
-                    "inside": { ph: "/ɪnˈsaɪd/", pos: "adv.", cn: "在里面" }
+                    "wait": { ph: "/weɪt/", pos: "v.", cn: "等待", audio: AUDIO_BASE + "v_wait.mp3" },
+                    "stop": { ph: "/stɑːp/", pos: "n.", cn: "车站", audio: AUDIO_BASE + "v_stop.mp3" },
+                    "door": { ph: "/dɔːr/", pos: "n.", cn: "门", audio: AUDIO_BASE + "v_door.mp3" },
+                    "opens": { ph: "/ˈoʊ.pənz/", pos: "v.", cn: "打开", audio: AUDIO_BASE + "v_opens.mp3" },
+                    "friends": { ph: "/frendz/", pos: "n.", cn: "朋友", audio: AUDIO_BASE + "v_friends.mp3" },
+                    "inside": { ph: "/ɪnˈsaɪd/", pos: "adv.", cn: "在里面", audio: AUDIO_BASE + "v_inside.mp3" }
                 }
             },
             {
                 text: "We {sit} together and {look} out the {window}. We {talk} and {laugh} {happily}.",
                 cn: "我们坐在一起看窗外。我们开心地说话大笑。",
-                img: "images/story001_yellowbus/p4.jpg",
+                img: AUDIO_BASE + "p4.jpg",
+                audio: AUDIO_BASE + "p4.mp3",
                 vocab: { 
-                    "sit": { ph: "/sɪt/", pos: "v.", cn: "坐" },
-                    "look": { ph: "/lʊk/", pos: "v.", cn: "看" },
-                    "window": { ph: "/ˈwɪn.doʊ/", pos: "n.", cn: "窗户" },
-                    "talk": { ph: "/tɑːk/", pos: "v.", cn: "说话" },
-                    "laugh": { ph: "/læf/", pos: "v.", cn: "笑" },
-                    "happily": { ph: "/ˈhæp.əl.i/", pos: "adv.", cn: "快乐地" }
+                    "sit": { ph: "/sɪt/", pos: "v.", cn: "坐", audio: AUDIO_BASE + "v_sit.mp3" },
+                    "look": { ph: "/lʊk/", pos: "v.", cn: "看", audio: AUDIO_BASE + "v_look.mp3" },
+                    "window": { ph: "/ˈwɪn.doʊ/", pos: "n.", cn: "窗户", audio: AUDIO_BASE + "v_window.mp3" },
+                    "talk": { ph: "/tɑːk/", pos: "v.", cn: "说话", audio: AUDIO_BASE + "v_talk.mp3" },
+                    "laugh": { ph: "/læf/", pos: "v.", cn: "笑", audio: AUDIO_BASE + "v_laugh.mp3" },
+                    "happily": { ph: "/ˈhæp.əl.i/", pos: "adv.", cn: "快乐地", audio: AUDIO_BASE + "v_happily.mp3" }
                 }
             },
             {
-                text: "The bus ride is {safe} and {fun}. I {love} the yellow bus.",
+                text: "The bus {ride} is {safe} and {fun}. I {love} the yellow bus.",
                 cn: "坐校车既安全又有趣。我爱黄色校车。",
-                img: "images/story001_yellowbus/p5.jpg",
+                img: AUDIO_BASE + "p5.jpg",
+                audio: AUDIO_BASE + "p5.mp3",
                 vocab: { 
-                    "safe": { ph: "/seɪf/", pos: "adj.", cn: "安全的" },
-                    "fun": { ph: "/fʌn/", pos: "adj.", cn: "有趣的" },
-                    "love": { ph: "/lʌv/", pos: "v.", cn: "爱" }
+                    "ride": { ph: "/raɪd/", pos: "n.", cn: "旅程/乘车", audio: AUDIO_BASE + "v_ride.mp3" },
+                    "safe": { ph: "/seɪf/", pos: "adj.", cn: "安全的", audio: AUDIO_BASE + "v_safe.mp3" },
+                    "fun": { ph: "/fʌn/", pos: "adj.", cn: "有趣的", audio: AUDIO_BASE + "v_fun.mp3" },
+                    "love": { ph: "/lʌv/", pos: "v.", cn: "爱", audio: AUDIO_BASE + "v_love.mp3" }
                 }
             }
         ],
         quizzes: [
-            { question: "What color is the bus?", options: ["Red", "Yellow", "Blue"], answer: 1 },
-            { question: "Who is the driver?", options: ["Mr. Green", "Mr. Brown", "Mr. Black"], answer: 1 },
-            { question: "Are they happy on the bus?", options: ["Yes", "No"], answer: 0 }
+            { 
+                question: "What color is the bus?", 
+                options: ["Red", "Yellow", "Blue"], 
+                answer: 1, 
+                audio: AUDIO_BASE + "q_1.mp3",
+                optionAudios: [ AUDIO_BASE + "q_1_opt_0.mp3", AUDIO_BASE + "q_1_opt_1.mp3", AUDIO_BASE + "q_1_opt_2.mp3" ]
+            },
+            { 
+                question: "Who is the driver?", 
+                options: ["Mr. Green", "Mr. Brown", "Mr. Black"], 
+                answer: 1, 
+                audio: AUDIO_BASE + "q_2.mp3",
+                optionAudios: [ AUDIO_BASE + "q_2_opt_0.mp3", AUDIO_BASE + "q_2_opt_1.mp3", AUDIO_BASE + "q_2_opt_2.mp3" ]
+            },
+            { 
+                question: "Are they happy on the bus?", 
+                options: ["Yes", "No"], 
+                answer: 0, 
+                audio: AUDIO_BASE + "q_3.mp3",
+                optionAudios: [ AUDIO_BASE + "q_3_opt_0.mp3", AUDIO_BASE + "q_3_opt_1.mp3" ]
+            }
         ]
     };
 
-    let currentRate = 1.0;
-    let isAutoPlaying = false; 
+    /* ================= 业务逻辑 ================= */
 
-    // 初始化
+    function checkAccountLogin() {
+        const userIn = document.getElementById('username-input').value.trim();
+        const passIn = document.getElementById('password-input').value.trim();
+        const msg = document.getElementById('login-msg');
+        if (USER_DATABASE[userIn] && USER_DATABASE[userIn] === passIn) {
+            localStorage.setItem('magic_user_account', userIn);
+            document.getElementById('login-overlay').style.display = 'none';
+        } else {
+            msg.innerText = "❌ 账号或密码错误";
+        }
+    }
+
+    window.onload = function() {
+        if (localStorage.getItem('magic_user_account') && USER_DATABASE[localStorage.getItem('magic_user_account')]) {
+            document.getElementById('login-overlay').style.display = 'none';
+        }
+        setRandomCoverImage();
+    };
+
+    function setRandomCoverImage() {
+        const coverImg = document.getElementById('cover-img');
+        if (!coverImg || !storyData.paragraphs.length) return;
+        const storyImages = storyData.paragraphs.map(p => p.img);
+        coverImg.src = storyImages[Math.floor(Math.random() * storyImages.length)];
+    }
+
     function openBook() {
         document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('learning-screen').style.display = 'flex';
+        document.getElementById('start-overlay').style.display = 'flex';
         renderContent();
-        activateParagraph(0);
+        activateParagraphUI(0);
         
-        // 尝试预热音频引擎 (解决手机静音问题)
-        if(window.speechSynthesis) {
-            window.speechSynthesis.cancel();
-            let u = new SpeechSynthesisUtterance('');
-            window.speechSynthesis.speak(u);
+        if (window.innerWidth >= 768) {
+            const list = document.getElementById('vocab-container');
+            const btn = document.getElementById('toggle-vocab-btn');
+            list.classList.add('expanded');
+            btn.innerText = '➖';
         }
+    }
+
+    function toggleVocabVisibility() {
+        const list = document.getElementById('vocab-container');
+        const btn = document.getElementById('toggle-vocab-btn');
+        if (list.classList.contains('expanded')) {
+            list.classList.remove('expanded');
+            btn.innerText = '➕';
+        } else {
+            list.classList.add('expanded');
+            btn.innerText = '➖';
+        }
+    }
+
+    function forceExpandVocab() {
+        const list = document.getElementById('vocab-container');
+        const btn = document.getElementById('toggle-vocab-btn');
+        if (!list.classList.contains('expanded')) {
+            list.classList.add('expanded');
+            btn.innerText = '➖';
+        }
+    }
+
+    function toggleVocabMode() {
+        forceExpandVocab();
+        if (isFullVocabMode) {
+            isFullVocabMode = false;
+            updateSidebar(currentIndex); 
+        } else {
+            isFullVocabMode = true;
+            renderAllVocab();
+        }
+    }
+
+    function setLoopMode(mode) {
+        playMode = mode;
+        document.querySelectorAll('.loop-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('loop-' + mode).classList.add('active');
+    }
+
+    function renderAllVocab() {
+        const container = document.getElementById('vocab-container');
+        const header = document.getElementById('vocab-header-el');
+        header.innerText = "🔓 全书词汇 (点击恢复)";
+        header.style.color = "#4CAF50";
+        container.innerHTML = "";
+        storyData.paragraphs.forEach(para => {
+            for (let [word, info] of Object.entries(para.vocab)) {
+                let card = createVocabCard(word, info);
+                card.classList.add('revealed');
+                container.appendChild(card);
+            }
+        });
+    }
+
+    function startStory() {
+        document.getElementById('start-overlay').style.display = 'none';
+        mp3Player.src = ""; mp3Player.play().catch(()=>{}); 
+        isAutoPlaying = true;
+        updatePlayButtonUI();
+        playNextParagraph(0);
     }
 
     function renderContent() {
         const container = document.getElementById('col-mid');
         container.innerHTML = "";
-
-        // 渲染正文
         storyData.paragraphs.forEach((para, idx) => {
             let card = document.createElement('div');
             card.className = 'script-card';
             card.id = `para-${idx}`;
-            
             card.onclick = (e) => {
                 if(!e.target.classList.contains('highlight-word')) {
-                    stopAutoPlay();
-                    activateParagraph(idx);
+                    handleParagraphClick(idx);
                 }
             };
-
-            let htmlText = para.text.replace(/{(\w+)}/g, (match, word) => {
-                return `<span class="highlight-word" onclick="handleWordClick('${word}', ${idx}, event)">${word}</span>`;
-            });
-
+            let htmlText = para.text.replace(/{(\w+)}/g, (match, word) => `<span class="highlight-word" onclick="handleWordClick('${word}', ${idx}, event)">${word}</span>`);
             card.innerHTML = `<div class="en-text">${htmlText}</div><div class="cn-text">${para.cn}</div>`;
             container.appendChild(card);
         });
-
-        // 渲染互动区
+        
         let divider = document.createElement('div');
         divider.className = 'section-divider';
         divider.innerText = "——— ✨ Quiz Time (互动挑战) ✨ ———";
@@ -334,34 +492,104 @@
             let qCard = document.createElement('div');
             qCard.className = 'quiz-card';
             qCard.innerHTML = `
-                <div class="quiz-title">Question ${qIdx + 1}</div>
+                <div style="font-weight:bold;color:#EF6C00;margin-bottom:8px;">Question ${qIdx + 1}</div>
                 <div style="display:flex; align-items:center; margin-bottom:10px;">
                     <div style="font-weight:bold; flex:1; font-size:16px;">${quiz.question}</div>
-                    <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="stopAutoPlay(); speakText('${quiz.question}')">🔊</button>
+                    <button class="audio-btn" onclick="handleQuestionClick(${qIdx})">🔊 听题</button>
                 </div>
                 <div>
-                    ${quiz.options.map((opt, oIdx) => `
-                        <div class="quiz-opt" onclick="checkAnswer(this, ${oIdx}, ${quiz.answer}, '${opt}')">
-                            <span>${opt}</span>
-                            <button style="border:none;background:none;font-size:16px;cursor:pointer;" onclick="event.stopPropagation(); stopAutoPlay(); speakText('${opt}')">🔈</button>
-                        </div>
-                    `).join('')}
+                    ${quiz.options.map((opt, oIdx) => {
+                        let optAudio = (quiz.optionAudios && quiz.optionAudios[oIdx]) ? quiz.optionAudios[oIdx] : '';
+                        return `<div class="quiz-opt" onclick="checkAnswer(this, ${oIdx}, ${quiz.answer}, '${optAudio}')"><span>${opt}</span></div>`;
+                    }).join('')}
                 </div>
             `;
             container.appendChild(qCard);
         });
-        
-        // 底部留白
         let spacer = document.createElement('div');
-        spacer.style.height = "60px";
+        spacer.style.height = "50px";
         container.appendChild(spacer);
     }
 
-    // 点击单词
+    function playMp3(url, onEndCallback) {
+        stopAllSound(false);
+        if(!url) {
+            if(onEndCallback) onEndCallback();
+            return;
+        }
+        mp3Player.src = url;
+        mp3Player.playbackRate = currentRate;
+        mp3Player.play().catch(e => { console.log("Play Fail:", e); });
+        
+        mp3Player.onended = () => { if(onEndCallback) onEndCallback(); };
+        mp3Player.onerror = () => { console.log("MP3 Error"); };
+    }
+
+    function stopAllSound(resetAutoPlay = true) {
+        if(resetAutoPlay) isAutoPlaying = false;
+        mp3Player.pause();
+        updatePlayButtonUI();
+    }
+
+    function activateParagraphUI(idx) {
+        currentIndex = idx;
+        document.querySelectorAll('.script-card').forEach(el => el.classList.remove('active'));
+        const activeCard = document.getElementById(`para-${idx}`);
+        if(activeCard) {
+            activeCard.classList.add('active');
+            activeCard.scrollIntoView({behavior: "smooth", block: "center"});
+        }
+        if(storyData.paragraphs[idx]) document.getElementById('scene-img').src = storyData.paragraphs[idx].img;
+        
+        if(!isFullVocabMode) updateSidebar(idx);
+    }
+
+    function playNextParagraph(idx) {
+        if (!isAutoPlaying) { stopAllSound(); return; }
+
+        if (idx >= storyData.paragraphs.length) {
+            if (playMode === 'all') {
+                idx = 0; 
+            } else {
+                stopAllSound(); 
+                return;
+            }
+        }
+
+        activateParagraphUI(idx);
+        let p = storyData.paragraphs[idx];
+        
+        playMp3(p.audio, () => {
+            if(isAutoPlaying) {
+                let nextIdx = idx + 1;
+                if (playMode === 'one') nextIdx = idx; 
+                setTimeout(() => playNextParagraph(nextIdx), 500);
+            }
+        });
+    }
+
+    function handleParagraphClick(idx) {
+        stopAllSound(true); 
+        activateParagraphUI(idx);
+        playMp3(storyData.paragraphs[idx].audio, null);
+    }
+
     function handleWordClick(word, paraIdx, event) {
         event.stopPropagation();
-        stopAutoPlay();
-        activateParagraph(paraIdx, true); 
+        stopAllSound(true);
+        activateParagraphUI(paraIdx); 
+        
+        let audioUrl = null;
+        const paraData = storyData.paragraphs[paraIdx];
+        if (paraData && paraData.vocab && paraData.vocab[word]) {
+            audioUrl = paraData.vocab[word].audio;
+        } else {
+            for(let p of storyData.paragraphs) {
+                if(p.vocab && p.vocab[word]) { audioUrl = p.vocab[word].audio; break; }
+            }
+        }
+        
+        forceExpandVocab();
 
         const vocabCard = document.getElementById(`vocab-card-${word}`);
         if(vocabCard) {
@@ -370,130 +598,86 @@
             vocabCard.classList.add('focused');
             vocabCard.scrollIntoView({behavior: "smooth", block: "center"});
         }
-        speakText(word);
+        playMp3(audioUrl, null);
     }
 
-    // 激活段落
-    function activateParagraph(idx, silent = false) {
-        document.querySelectorAll('.script-card').forEach(el => el.classList.remove('active'));
-        const activeCard = document.getElementById(`para-${idx}`);
-        if(activeCard) {
-            activeCard.classList.add('active');
-            activeCard.scrollIntoView({behavior: "smooth", block: "center"});
+    function createVocabCard(word, info) {
+        let card = document.createElement('div');
+        card.className = 'vocab-card';
+        card.id = `vocab-card-${word}`;
+        card.onclick = function() {
+            stopAllSound(true);
+            document.querySelectorAll('.vocab-card').forEach(el => el.classList.remove('focused'));
+            this.classList.add('focused');
+            if (!this.classList.contains('revealed')) this.classList.add('revealed');
+            playMp3(info.audio, null);
+        };
+        card.innerHTML = `<div class="vocab-top"><div><span class="vocab-word">${word}</span> <span style="font-size:12px;color:#888;">${info.ph}</span></div><button style="border:none;background:none;color:#2979FF;" onclick="event.stopPropagation(); stopAllSound(true); playMp3('${info.audio}', null)">🔊</button></div><div class="vocab-mask">点击查看</div><div class="vocab-reveal"><span class="pos-tag">${info.pos}</span> ${info.cn}</div>`;
+        return card;
+    }
+
+    function handleQuestionClick(qIdx) {
+        stopAllSound(true);
+        const quiz = storyData.quizzes[qIdx];
+        const allQuizCards = document.querySelectorAll('.quiz-card');
+        if(allQuizCards[qIdx]) {
+            const options = allQuizCards[qIdx].querySelectorAll('.quiz-opt');
+            options.forEach(opt => opt.classList.remove('correct', 'wrong'));
         }
+        playMp3(quiz.audio, null);
+    }
+    
+    window.checkAnswer = function(el, selIdx, ansIdx, audioUrl) {
+        stopAllSound(true);
+        playMp3(audioUrl, null);
+        if(selIdx === ansIdx) { el.classList.add('correct'); el.classList.remove('wrong'); }
+        else { el.classList.add('wrong'); el.classList.remove('correct'); }
+    }
 
-        // 切换图片
-        const imgEl = document.getElementById('scene-img');
-        const errorMsg = document.getElementById('error-msg');
-        // 重置状态
-        imgEl.style.display = 'block';
-        errorMsg.style.display = 'none';
-        imgEl.src = storyData.paragraphs[idx].img;
-
-        updateSidebar(idx);
-
-        if (!silent) {
-            let rawText = storyData.paragraphs[idx].text.replace(/{|}/g, "");
-            speakText(rawText);
+    function toggleAutoPlay() {
+        if (isAutoPlaying) stopAllSound();
+        else {
+            isAutoPlaying = true;
+            updatePlayButtonUI();
+            playNextParagraph(currentIndex);
         }
     }
 
-    // 更新单词表
+    function updatePlayButtonUI() {
+        const btnMobile = document.getElementById('mobile-play-btn');
+        const btnPC = document.getElementById('pc-play-btn');
+        
+        const text = isAutoPlaying ? "⏹" : "▶ 全文";
+        const action = isAutoPlaying ? 'add' : 'remove';
+
+        // 同时更新两个按钮
+        if(btnMobile) { btnMobile.innerHTML = text; btnMobile.classList[action]('playing'); }
+        if(btnPC) { btnPC.innerHTML = text; btnPC.classList[action]('playing'); }
+    }
+
     function updateSidebar(idx) {
         const container = document.getElementById('vocab-container');
-        container.innerHTML = "";
-        const vocabMap = storyData.paragraphs[idx].vocab;
+        const header = document.getElementById('vocab-header-el');
         
-        for (let [word, info] of Object.entries(vocabMap)) {
-            let card = document.createElement('div');
-            card.className = 'vocab-card';
-            card.id = `vocab-card-${word}`;
-            
-            card.onclick = function() {
-                stopAutoPlay();
-                document.querySelectorAll('.vocab-card').forEach(el => el.classList.remove('focused'));
-                this.classList.add('focused');
-                if (!this.classList.contains('revealed')) this.classList.add('revealed');
-                speakText(word);
-            };
+        container.innerHTML = "";
+        header.innerText = "🔑 核心词汇 (点击全显)";
+        header.style.color = "#5D4037";
 
-            card.innerHTML = `
-                <div class="vocab-top">
-                    <div><span class="vocab-word">${word}</span> <span style="font-size:12px;color:#888;">${info.ph}</span></div>
-                    <button style="border:none;background:none;color:#2979FF;cursor:pointer;" onclick="event.stopPropagation(); stopAutoPlay(); speakText('${word}')">🔊</button>
-                </div>
-                <div class="vocab-mask">点击查看释义</div>
-                <div class="vocab-reveal"><span class="pos-tag">${info.pos}</span> ${info.cn}</div>
-            `;
+        const vocabMap = storyData.paragraphs[idx].vocab;
+        for (let [word, info] of Object.entries(vocabMap)) {
+            let card = createVocabCard(word, info);
             container.appendChild(card);
         }
     }
 
-    // 自动播放控制
-    function toggleAutoPlay() {
-        if (isAutoPlaying) stopAutoPlay();
-        else startAutoPlay();
-    }
-
-    function startAutoPlay() {
-        isAutoPlaying = true;
-        const btn = document.getElementById('play-all-btn');
-        btn.innerHTML = "⏹ 停止 ";
-        btn.classList.add('playing');
-        playNextParagraph(0);
-    }
-
-    function stopAutoPlay() {
-        isAutoPlaying = false;
-        window.speechSynthesis.cancel();
-        const btn = document.getElementById('play-all-btn');
-        btn.innerHTML = "▶ 全文";
-        btn.classList.remove('playing');
-    }
-
-    function playNextParagraph(idx) {
-        if (!isAutoPlaying || idx >= storyData.paragraphs.length) {
-            stopAutoPlay();
-            return;
-        }
-        activateParagraph(idx); 
-        
-        let rawText = storyData.paragraphs[idx].text.replace(/{|}/g, "");
-        window.speechSynthesis.cancel();
-        let u = new SpeechSynthesisUtterance(rawText);
-        u.lang = 'en-US';
-        u.rate = currentRate;
-        u.onend = () => {
-             if(isAutoPlaying) setTimeout(() => playNextParagraph(idx + 1), 600);
-        };
-        window.speechSynthesis.speak(u);
-    }
-
-    // 答题
-    window.checkAnswer = function(el, selIdx, ansIdx, text) {
-        stopAutoPlay(); 
-        speakText(text);
-        if(selIdx === ansIdx) el.classList.add('correct');
-        else el.classList.add('wrong');
-    }
-
-    // 设置
     function setSpeed(rate) {
         currentRate = rate;
+        mp3Player.playbackRate = rate;
         document.querySelectorAll('.speed-btn').forEach(btn => {
             if (parseFloat(btn.innerText) === rate) btn.classList.add('active');
             else btn.classList.remove('active');
         });
     }
-
-    function speakText(text) {
-        window.speechSynthesis.cancel();
-        let u = new SpeechSynthesisUtterance(text);
-        u.lang = 'en-US';
-        u.rate = currentRate; 
-        window.speechSynthesis.speak(u);
-    }
 </script>
 </body>
-
 </html>
